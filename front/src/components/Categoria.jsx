@@ -25,7 +25,7 @@ export const Categoria = ({ id, nombre, descripcion }) => {
         <p className="text-center mt-8">{descripcion}</p>
         <hr className="border border-gray-300 my-4" />
         <div className="flex flex-wrap justify-center gap-8 mt-8 px-44">
-          {products.map((product) => (
+          {products.filter((product) => product.estado && product.cantidad > 0).map((product) => (
             <CardProduct
               key={product.id}
               id={product.id}
@@ -35,6 +35,7 @@ export const Categoria = ({ id, nombre, descripcion }) => {
               precio={product.precio}
               carrito={true}
               cantidad={product.cantidad}
+              estado={product.estado}
             />
           ))}
         </div>

@@ -10,6 +10,14 @@ def create(request):
     
     if serializer.is_valid():
         pedido = serializer.save()
+        # Cambiar el estado del pedido a CONFIRMADO automáticamente
+        from estado_pedidos.models import EstadoPedidos
+        try:
+            estado_confirmado = EstadoPedidos.objects.get(nombre__iexact="CONFIRMADO")
+            pedido.estado = estado_confirmado
+            pedido.save()
+        except EstadoPedidos.DoesNotExist:
+            pass  # Si no existe el estado, no lo cambia
         return Response({'id': pedido.id}, status=status.HTTP_201_CREATED)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

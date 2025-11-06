@@ -22,7 +22,7 @@ export const Favoritos = () => {
         CONOCE NUESTROS FAVORITOS
       </h1>
       <div className="flex flex-wrap justify-center items-center gap-8 mt-8 px-44">
-        {favoritos.map((favorito) => (
+        {favoritos.filter((favorito) => favorito.estado && favorito.cantidad > 0).map((favorito) => (
           <CardProduct
             key={favorito.id}
             id={favorito.id}
@@ -32,6 +32,7 @@ export const Favoritos = () => {
             precio={favorito.precio}
             cantidad={favorito.cantidad}
             carrito={true}
+            estado={favorito.estado}
           />
         ))}
       </div>

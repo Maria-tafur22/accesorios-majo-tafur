@@ -30,8 +30,9 @@ export const Hero = ({ images, interval = 3000 }) => {
         {images.map((image, index) => (
           <div
             key={index}
-            className="min-w-full h-full bg-cover bg-center"
+            className="min-w-full h-full bg-cover bg-center cursor-pointer"
             style={{ backgroundImage: `url(${image})` }}
+            onClick={() => window.open("/productos", "_blank")}
           ></div>
         ))}
       </div>

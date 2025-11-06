@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { ValuContext } from "../context/ValuContext";
 import { showToast } from "../utils/toast";
 import { LayoutNavFoo } from "../layouts/LayoutNavFoo";
@@ -9,6 +9,8 @@ import { IoMdAddCircle, IoMdRemoveCircle } from "react-icons/io";
 import { initialFormData } from "../utils/formData";
 import { calculateMD5 } from "../utils/signature";
 import { generateReferenceCode } from "../utils/referenceCode";
+
+
 
 export const Carrito = () => {
   const { carrito, setCarrito, idCarrito, usuario } = useContext(ValuContext);
@@ -49,19 +51,26 @@ export const Carrito = () => {
   };
 
   const increment = async (itemId, cantidad) => {
+    const item = carrito.items.find((it) => it.producto.id === itemId);
+    if (!item) return;
+    const available = item.producto.cantidad ?? 0; // stock available
     const newQuantity = cantidad + 1;
+    if (newQuantity > available) {
+      showToast("No hay suficiente producto disponible", "error");
+      return;
+    }
     await updateItemQuantity(itemId, newQuantity);
     setCarrito((prevCarrito) => ({
       ...prevCarrito,
-      items: prevCarrito.items.map((item) =>
-        item.producto.id === itemId ? { ...item, cantidad: newQuantity } : item
+      items: prevCarrito.items.map((it) =>
+        it.producto.id === itemId ? { ...it, cantidad: newQuantity } : it
       ),
     }));
   };
 
   const decrement = async (itemId, cantidad) => {
     const newQuantity = cantidad - 1;
-
+    if (newQuantity < 0) return;
     await updateItemQuantity(itemId, newQuantity);
     if (newQuantity > 0) {
       setCarrito((prevCarrito) => ({
@@ -97,13 +106,13 @@ export const Carrito = () => {
     form.submit();
   };
 
-  const calcularTotal = () => {
+  const calcularTotal = useCallback(() => {
     if (!items) return 0;
     return items.reduce(
       (total, { cantidad, producto }) => total + cantidad * producto.precio,
       0
     );
-  };
+  }, [items]);
 
   useEffect(() => {
     if (!items || !usuario) return;
@@ -116,8 +125,9 @@ export const Carrito = () => {
       telephone: usuario.celular,
       referenceCode: generateReferenceCode(usuario),
     }));
-  }, [items]);
+  }, [items, calcularTotal, usuario]);
 
+  
   return (
     <LayoutNavFoo>
       <div className="container mx-auto p-4">
@@ -188,5 +198,6 @@ export const Carrito = () => {
         </div>
       </div>
     </LayoutNavFoo>
+    
   );
 };

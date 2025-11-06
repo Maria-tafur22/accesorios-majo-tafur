@@ -21,6 +21,8 @@ export const AdminPanel = () => {
     try {
       const response = await api.get("/productos/get");
       setProducts(response.data);
+      console.log(response.data);
+      
       setFilteredProducts(response.data);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -125,6 +127,7 @@ export const AdminPanel = () => {
                 <th className="py-3 px-4 text-left">Precio</th>
                 <th className="py-3 px-4 text-left">Categoría</th>
                 <th className="py-3 px-4 text-left">Cantidad</th>
+                <th className="py-3 px-4 text-left">Estado</th>
                 <th className="py-3 px-4 text-center">Acciones</th>
               </tr>
             </thead>
@@ -145,6 +148,9 @@ export const AdminPanel = () => {
                       {categories[product.categoria - 1]?.nombre}
                     </td>
                     <td className="py-3 px-4">{product.cantidad}</td>
+                    <td className="py-3 px-4">
+                      {product.estado ? "Activo" : "Inactivo"}
+                    </td>
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center space-x-4">
                         <MdEdit
@@ -161,7 +167,7 @@ export const AdminPanel = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="py-4 text-center text-gray-500">
+                  <td colSpan="6" className="py-4 text-center text-gray-500">
                     No se encontraron productos.
                   </td>
                 </tr>

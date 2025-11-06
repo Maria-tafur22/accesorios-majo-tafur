@@ -1,4 +1,4 @@
-import { FaFacebook, FaInstagram, FaTiktok } from "react-icons/fa";
+import { FaFacebook, FaInstagram, } from "react-icons/fa";
 
 const Footer = () => {
   return (
@@ -6,13 +6,13 @@ const Footer = () => {
       <div className="flex md:flex-row flex-col items-center justify-around gap-8 text-gray-800 px-6 w-2/3 m-auto">
         <div>
           <h2 className="font-bold text-lg mb-4">Contactanos:</h2>
-          <p>Valú Accesorios</p>
+          <p>Accesorios Majo Tafur</p>
           <p>🛒 Tienda Online - Neiva, Colombia</p>
-          <p>✉️ vagape1407@gmail.com</p>
+          <p>✉️ mtafurguevara@gmail.com</p>
           <p>
             📱 Teléfono & WhatsApp:{" "}
-            <a href="https://api.whatsapp.com/message/SPESBROOKCQVA1?autoload=1&app_absent=0">
-              +57 3237119619
+            <a href="https://wa.me/573115001813">
+              +57 3115001813
             </a>
           </p>
         </div>
@@ -81,23 +81,15 @@ const Footer = () => {
               className="text-2xl hover:text-gray-600 cursor-pointer"
               onClick={() =>
                 window.open(
-                  "https://www.instagram.com/accesorioss__valu/",
+                  "https://www.instagram.com/accesorios_valu1?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
                   "_blank"
                 )
               }
             />
-            <FaTiktok
-              className="text-2xl hover:text-gray-600 cursor-pointer"
-              onClick={() =>
-                window.open(
-                  "https://www.instagram.com/accesorioss__valu/",
-                  "_blank"
-                )
-              }
-            />
+            
           </div>
           <p className="mt-4 text-sm text-gray-600">
-            ©2024 Valú Accesorios | Todos los derechos reservados
+            ©2024 Accesorios Majo Tafur | Todos los derechos reservados
           </p>
         </div>
       </div>

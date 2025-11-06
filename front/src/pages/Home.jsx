@@ -20,7 +20,7 @@ export const Home = () => {
       <Favoritos />
       <div className="relative w-full">
         <img
-          src="/img/banner.webp"
+          src="/img/banner.png"
           alt="Banner"
           className="w-full h-auto object-cover"
         />

@@ -16,7 +16,6 @@ import { Confirmation } from "./pages/Confirmation";
 
 function App() {
   const { categories } = useContext(ValuContext);
-  console.log("log")
   return (
     <Router>
       <Routes>

@@ -13,7 +13,10 @@ export const checkAuth = async () => {
     } else {
       return false;
     }
-  } catch {
+  } catch (error) {
+    if(error.status === 401){
+      localStorage.removeItem("token")
+    }
     return false;
   }
 };

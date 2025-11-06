@@ -3,6 +3,7 @@ ven/
 env/
 .ven/
 .env/
+venv/
 
 *.env
 *.env.*

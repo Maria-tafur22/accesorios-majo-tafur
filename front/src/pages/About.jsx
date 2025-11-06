@@ -12,7 +12,7 @@ export const About = () => {
             Detalles personales
           </h1>
           <p className="mt-4 text-pink-900 text-base font-bold">
-            En Valu, creemos que los accesorios son la clave para expresar tu
+            En Accesorios Majo Tafur, creemos que los accesorios son la clave para expresar tu
             estilo único y realzar tu personalidad.
           </p>
           <p className="mt-4 text-gray-600 text-base">
@@ -25,19 +25,19 @@ export const About = () => {
           <CardAbout
             Icon={FaUser}
             title="Perfil"
-            description="Como parte del equipo de Valu, Maria y Valentina combinan su amor por la programación con su estilo único para crear experiencias digitales excepcionales."
+            description="Como parte del equipo de Accesorios Majo Tafur, Maria combina su amor por la programación con su estilo único para crear experiencias digitales excepcionales."
           />
 
           <CardAbout
             Icon={FaLocationPin}
             title="Ubicación"
-            description="Valu está ubicada en Neiva-Huila, un vibrante centro de moda y cultura."
+            description="Accesorios Majo Tafur está ubicada en Neiva-Huila, un vibrante centro de moda y cultura."
           />
 
           <CardAbout
             Icon={FaFlag}
             title="Intereses"
-            description="En Valu, estamos apasionados por la moda, la tecnología y la creatividad. Nos encanta descubrir las últimas tendencias en accesorios y compartir nuestro entusiasmo con nuestra comunidad de clientes."
+            description="En Accesorios Majo Tafur, estamos apasionados por la moda, la tecnología y la creatividad. Nos encanta descubrir las últimas tendencias en accesorios y compartir nuestro entusiasmo con nuestra comunidad de clientes."
           />
         </div>
       </div>

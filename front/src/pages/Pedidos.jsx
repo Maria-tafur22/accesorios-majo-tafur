@@ -10,7 +10,8 @@ export const Pedidos = () => {
     const fetchPedidos = async () => {
       try {
         const response = await api.get("/pedidos/get");
-        setPedidos(response.data);
+        // Mostrar los pedidos desde el más reciente al más antiguo
+        setPedidos(response.data.slice().reverse());
       } catch (error) {
         console.error(error);
       }

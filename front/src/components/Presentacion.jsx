@@ -20,7 +20,7 @@ export const Presentacion = () => {
           Accesorios y Regalos Para Mujer Con Significado
         </h1>
         <p className="text-lg md:text-2xl text-white mb-6 drop-shadow-md">
-          Bienvenid@ a Valu
+          Bienvenid@ a Accesoiors Majo Tafur 
         </p>
         <p className="text-md md:text-lg text-white mb-8 drop-shadow-md max-w-2xl">
           Tu tienda online de accesorios de moda y regalos con intenciones para
