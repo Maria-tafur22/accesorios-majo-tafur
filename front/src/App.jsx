@@ -23,7 +23,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route
           path="/admin"
-          element={<ProtectedRoute element={<AdminPanel />} />}
+          element={<ProtectedRoute element={<AdminPanel />} requireAdmin={true} />}
         />
         <Route path="/" element={<Home />} />
         <Route path="/productos" element={<Productos />} />

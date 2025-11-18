@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import ReactDOM from "react-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { IoMdCloseCircle } from "react-icons/io";
 import { api } from "../api/axiosConfig";
 import { showToast } from "../utils/toast";
@@ -8,15 +9,16 @@ export const ProductForm = ({ product, onClose }) => {
   const [formData, setFormData] = useState({
     nombre: "",
     precio: "",
-    imagen: "",
+    imagen: null,
     estado: "",
-    cantidad: "",
+    cantidad: 0,
     categoria: "",
-    isFavorite: false, // Nuevo campo para isFavorite
+    isFavorite: false,
   });
   const [categories, setCategories] = useState([]);
   const { nombre, precio, estado, cantidad, categoria, isFavorite } = formData;
   const [img, setImg] = useState(null);
+  const queryClient = useQueryClient();
 
   const fetchCategories = async () => {
     try {
@@ -28,10 +30,26 @@ export const ProductForm = ({ product, onClose }) => {
   };
 
   useEffect(() => {
-    if (product.id) {
-      product.estado = product.estado === true ? "1" : "0";
-      setFormData({ ...product, isFavorite: product.isFavorite || false });
-      setImg(`${import.meta.env.VITE_BACK_URL_PROD}${product.imagen}`);
+    if (product && product.id) {
+      // No mutamos `product`. Mapear campos al estado del formulario.
+      const mapped = {
+        nombre: product.nombre || "",
+        precio: product.precio || "",
+        estado: product.estado === true || product.estado === "1" ? "1" : "0",
+        cantidad: product.cantidad || 0,
+        categoria: product.categoria && product.categoria.id ? product.categoria.id : product.categoria || "",
+        isFavorite: !!product.isFavorite,
+        imagen: null,
+      };
+      setFormData(mapped);
+
+      // Configurar vista previa de imagen si existe
+      const imgUrl = product.imagen
+        ? product.imagen.startsWith("http")
+          ? product.imagen
+          : `${import.meta.env.VITE_BACK_URL_PROD}${product.imagen}`
+        : null;
+      setImg(imgUrl);
     }
   }, [product]);
 
@@ -63,7 +81,9 @@ export const ProductForm = ({ product, onClose }) => {
     e.preventDefault();
     const formDataToSend = new FormData();
     formDataToSend.append("nombre", formData.nombre);
-    formDataToSend.append("precio", formData.precio);
+    // Normalizar precio: remover separadores de miles y comas
+    const precioClean = String(formData.precio).replace(/[^0-9]/g, "");
+    formDataToSend.append("precio", precioClean);
     formDataToSend.append("estado", formData.estado);
     formDataToSend.append("cantidad", formData.cantidad);
     formDataToSend.append("categoria", parseInt(formData.categoria));
@@ -72,9 +92,8 @@ export const ProductForm = ({ product, onClose }) => {
     if (formData.imagen && formData.imagen instanceof File) {
       formDataToSend.append("imagen", formData.imagen);
     }
-
     try {
-      if (product.id) {
+      if (product && product.id) {
         await api.put(`/productos/products/${product.id}/`, formDataToSend, {
           headers: { "Content-Type": "multipart/form-data" },
         });
@@ -85,9 +104,17 @@ export const ProductForm = ({ product, onClose }) => {
         });
         showToast("Producto creado exitosamente", "success");
       }
+
+      // Forzar refetch inmediato de productos
+      try {
+        queryClient.invalidateQueries(["productos"]);
+      } catch (err) {
+        // no-op si falla invalidation
+      }
+
       onClose();
     } catch (error) {
-      showToast(error.response.data?.detail, "error");
+      showToast(error.response?.data?.detail || "Error en el servidor", "error");
       console.error("Error submitting form:", error);
     }
   };
@@ -106,7 +133,7 @@ export const ProductForm = ({ product, onClose }) => {
         <div className="mb-4">
           <input
             type="file"
-            name="img"
+            name="imagen"
             onChange={handleChange}
             className="mb-2 hidden"
             id="file-input"

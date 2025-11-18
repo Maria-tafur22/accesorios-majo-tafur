@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useProductosRealtime } from "../api/useProductosRealtime";
 import { ProductForm } from "../components/ProductFrom";
 import { LayoutNavFoo } from "../layouts/LayoutNavFoo";
 import { api } from "../api/axiosConfig";
@@ -6,9 +7,10 @@ import { MdEdit, MdDelete } from "react-icons/md";
 import { showToast } from "../utils/toast";
 import { BiLastPage, BiFirstPage } from "react-icons/bi";
 import { formatearDinero } from "../utils/formatDiner";
+import { useQueryClient } from '@tanstack/react-query';
 
 export const AdminPanel = () => {
-  const [products, setProducts] = useState([]);
+  const { data: products = [], isLoading } = useProductosRealtime();
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [editingProduct, setEditingProduct] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -16,18 +18,8 @@ export const AdminPanel = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [productToDelete, setProductToDelete] = useState(null);
   const productsPerPage = 5;
+  const queryClient = useQueryClient();
 
-  const fetchProducts = async () => {
-    try {
-      const response = await api.get("/productos/get");
-      setProducts(response.data);
-      console.log(response.data);
-      
-      setFilteredProducts(response.data);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    }
-  };
 
   const fetchCategories = async () => {
     try {
@@ -40,8 +32,11 @@ export const AdminPanel = () => {
 
   useEffect(() => {
     fetchCategories();
-    fetchProducts();
   }, []);
+
+  useEffect(() => {
+    setFilteredProducts(products);
+  }, [products]);
 
   const handleAddProduct = () => {
     setEditingProduct({});
@@ -58,14 +53,14 @@ export const AdminPanel = () => {
   const handleDeleteProduct = async () => {
     try {
       await api.delete(`/productos/products/${productToDelete.id}/`);
-
-      setProducts(
-        products.filter((product) => product.id !== productToDelete.id)
-      );
-      setFilteredProducts(
-        filteredProducts.filter((product) => product.id !== productToDelete.id)
-      );
-
+      // Actualizar UI localmente
+      setFilteredProducts((prev) => prev.filter((p) => p.id !== productToDelete.id));
+      // Invalidar cache para que React Query haga refetch
+      try {
+        queryClient.invalidateQueries(["productos"]);
+      } catch (err) {
+        // no-op
+      }
       setProductToDelete(null);
       showToast("Producto eliminado exitosamente", "success");
     } catch (error) {
@@ -82,7 +77,7 @@ export const AdminPanel = () => {
     const value = e.target.value;
     setSearchTerm(value);
     setFilteredProducts(
-      products.filter((product) =>
+      (products || []).filter((product) =>
         product.nombre.toLowerCase().includes(value.toLowerCase())
       )
     );
@@ -99,6 +94,8 @@ export const AdminPanel = () => {
   );
 
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+
+  if (isLoading) return <div className="p-8 text-center">Cargando productos...</div>;
 
   return (
     <LayoutNavFoo>
@@ -145,7 +142,7 @@ export const AdminPanel = () => {
                       {formatearDinero(product.precio)}
                     </td>
                     <td className="py-3 px-4">
-                      {categories[product.categoria - 1]?.nombre}
+                      {categories.find((c) => c.id === product.categoria)?.nombre || "-"}
                     </td>
                     <td className="py-3 px-4">{product.cantidad}</td>
                     <td className="py-3 px-4">

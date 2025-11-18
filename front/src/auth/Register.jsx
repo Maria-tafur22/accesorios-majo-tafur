@@ -5,6 +5,9 @@ import { Input } from "../atoms/Input";
 import { CiUser, CiMail, CiLock, CiPhone, CiHome } from "react-icons/ci";
 import { api } from "../api/axiosConfig";
 import { ValuContext } from "../context/ValuContext";
+import { initialFormData } from "../utils/formData";
+import { calculateMD5 } from "../utils/signature";
+import { generateReferenceCode } from "../utils/referenceCode";
 import { showToast } from "../utils/toast";
 
 export const Register = () => {
@@ -24,7 +27,7 @@ export const Register = () => {
   const [passwordError, setPasswordError] = useState("");
   const [validationErrors, setValidationErrors] = useState({});
   const navigate = useNavigate();
-  const { setUsuario } = useContext(ValuContext);
+  const { setUsuario, carrito, setCarrito } = useContext(ValuContext);
   useEffect(() => {
     const fetchDepartamentos = async () => {
       try {
@@ -110,6 +113,7 @@ export const Register = () => {
     }
 
     try {
+      // 1. Registrar usuario
       const response = await api.post("api/register/", {
         username,
         email,
@@ -124,13 +128,93 @@ export const Register = () => {
         barrio,
         rol: 2,
       });
-      setUsuario(response.data.user);
+      // Mapear user id correctamente (backend devuelve 'user_id' en el register)
+      const userResp = response.data.user || {};
+      const mappedUser = { ...userResp, id: userResp.user_id || userResp.id };
+      setUsuario(mappedUser);
       localStorage.setItem("token", response.data.access);
-      navigate("/");
       showToast("Usuario registrado exitosamente", "success");
+
+      // 2. Crear pedido y detalles en backend
+      // Generar código de referencia y crear pedido
+      const referenceCode = generateReferenceCode(mappedUser);
+      // calcular total antes de crear pedido
+      const total = carrito.items.reduce((s, it) => s + it.cantidad * it.producto.precio, 0);
+      const pedidoRes = await api.post("/pedidos/create/", {
+        usuario: mappedUser.id,
+        total: total,
+        estado: 1, // PENDIENTE
+        fecha: new Date().toISOString().slice(0, 10),
+        referencia: referenceCode,
+      });
+      const pedidoId = pedidoRes.data.id || pedidoRes.data.pedido_id;
+
+      // Crear detalles del pedido
+      const detalles = carrito.items.map((item) => ({
+        pedido: pedidoId,
+        producto: item.producto.id,
+        cantidad: item.cantidad,
+        precio: item.producto.precio,
+      }));
+      await api.post("/detalles_pedido/create/", detalles);
+
+      // 3. Redirigir a PayU con los datos del pedido
+      // Generar datos para PayU ANTES de limpiar el carrito
+      const payuForm = {
+        ...initialFormData,
+        description: carrito.items.map((item) => item.producto.nombre).join(", "),
+        amount: total,
+        buyerEmail: mappedUser.email,
+        buyerFullName: `${mappedUser.first_name || ''} ${mappedUser.last_name || ''}`,
+        telephone: mappedUser.celular || mappedUser.phone || '',
+        referenceCode,
+      };
+      payuForm.signature = calculateMD5(
+        import.meta.env.VITE_API_KEY_PAYU,
+        import.meta.env.VITE_MERCHANT_ID_PAYU,
+        payuForm.referenceCode,
+        payuForm.amount,
+        payuForm.currency
+      );
+
+      // Crear y enviar el formulario a PayU
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = import.meta.env.VITE_URL_PAYU;
+      for (const key in payuForm) {
+        if (Object.prototype.hasOwnProperty.call(payuForm, key)) {
+          const hiddenField = document.createElement("input");
+          hiddenField.type = "hidden";
+          hiddenField.name = key;
+          hiddenField.value = payuForm[key];
+          form.appendChild(hiddenField);
+        }
+      }
+      document.body.appendChild(form);
+      
+      // Limpiar carrito DESPUÉS de enviar a PayU
+      localStorage.removeItem("guest_cart");
+      setCarrito({ items: [] });
+      
+      form.submit();
     } catch (error) {
-      showToast("Error registrando el usuario", "error");
-      console.error("Error registering:", error);
+      console.error("Error status:", error.response?.status);
+      console.error("Error data:", JSON.stringify(error.response?.data, null, 2));
+      console.error("Error message:", error.message);
+      const errorData = error.response?.data || {};
+      let errorMsg = "Error registrando el usuario";
+      
+      // Buscar el primer error en cualquier campo
+      for (const key in errorData) {
+        if (Array.isArray(errorData[key])) {
+          errorMsg = `${key}: ${errorData[key][0]}`;
+          break;
+        } else if (typeof errorData[key] === 'string') {
+          errorMsg = `${key}: ${errorData[key]}`;
+          break;
+        }
+      }
+      showToast(errorMsg, "error");
     }
   };
 

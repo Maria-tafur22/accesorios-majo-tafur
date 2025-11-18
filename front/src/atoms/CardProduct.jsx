@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { api } from "../api/axiosConfig";
 import { useContext, useEffect, useState } from "react";
 import { ValuContext } from "../context/ValuContext";
 import { showToast } from "../utils/toast";
@@ -16,7 +15,7 @@ export const CardProduct = ({
   carrito: carritoState = false,
   estado = true,
 }) => {
-  const { idCarrito, carrito, setAdd, usuario } = useContext(ValuContext);
+  const { carrito, setAdd, addItem, updateItem, removeItem } = useContext(ValuContext);
   const { items } = carrito;
   const navigate = useNavigate();
   const [cantidad, setCantidad] = useState(1);
@@ -42,31 +41,23 @@ export const CardProduct = ({
       showToast("Producto no disponible", "error");
       return;
     }
-    if (!usuario) {
-      showToast(
-        "Debes iniciar sesión para agregar un producto al carrito",
-        "error"
-      );
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-      return;
-    }
+    const productoObj = {
+      id,
+      nombre: title,
+      precio,
+      imagen: img,
+      cantidad: cantidadTotal,
+    };
     try {
-      const response = await api.post("/items_carrito/create/", {
-        carrito_id: idCarrito,
-        producto_id: id,
-        cantidad,
-      });
-      if (response.status === 201) {
-        if (firstTime) {
-          setAdd((prev) => !prev);
-          showToast("Producto agregado al carrito", "success");
-          setFirstTime(false);
-        }
-        setAddedToCart(true);
+      await addItem(productoObj, cantidad);
+      if (firstTime) {
+        setAdd((prev) => !prev);
+        showToast("Producto agregado al carrito", "success");
+        setFirstTime(false);
       }
-    } catch {
+      setAddedToCart(true);
+    } catch (err) {
+      console.error(err);
       showToast("Error agregando el producto al carrito", "error");
     }
   };
@@ -82,11 +73,7 @@ export const CardProduct = ({
       setCantidad(newQty);
       setAlerta("");
       try {
-        await api.post("/items_carrito/create/", {
-          carrito_id: idCarrito,
-          producto_id: id,
-          cantidad: newQty,
-        });
+        await updateItem(id, newQty);
         setAdd((prev) => !prev);
       } catch (err) {
         // revert on error
@@ -111,11 +98,7 @@ export const CardProduct = ({
       setCantidad(newQty);
       setAlerta("");
       try {
-        await api.post("/items_carrito/create/", {
-          carrito_id: idCarrito,
-          producto_id: id,
-          cantidad: newQty,
-        });
+        await updateItem(id, newQty);
         setAdd((prev) => !prev);
       } catch (err) {
         // revert on error
@@ -126,11 +109,7 @@ export const CardProduct = ({
     } else {
       // cantidad === 1 -> remove from cart
       try {
-        await api.post("/items_carrito/create/", {
-          carrito_id: idCarrito,
-          producto_id: id,
-          cantidad: 0,
-        });
+        await removeItem(id);
         setAddedToCart(false);
         setCantidad(1); // reset to 1 for future adds
         setAdd((prev) => !prev);

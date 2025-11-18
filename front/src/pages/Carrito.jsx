@@ -2,7 +2,6 @@ import { useContext, useEffect, useState, useCallback } from "react";
 import { ValuContext } from "../context/ValuContext";
 import { showToast } from "../utils/toast";
 import { LayoutNavFoo } from "../layouts/LayoutNavFoo";
-import { api } from "../api/axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { formatearDinero } from "../utils/formatDiner";
 import { IoMdAddCircle, IoMdRemoveCircle } from "react-icons/io";
@@ -13,7 +12,7 @@ import { generateReferenceCode } from "../utils/referenceCode";
 
 
 export const Carrito = () => {
-  const { carrito, setCarrito, idCarrito, usuario } = useContext(ValuContext);
+  const { carrito, setCarrito, usuario, updateItem, removeItem } = useContext(ValuContext);
   const { items } = carrito;
   const navigate = useNavigate();
   const [formData, setFormData] = useState(initialFormData);
@@ -34,21 +33,7 @@ export const Carrito = () => {
     }
   }, [formData.amount, formData.currency, formData.referenceCode]);
 
-  const updateItemQuantity = (itemId, cantidad) => {
-    return api.post("/items_carrito/create/", {
-      carrito_id: idCarrito,
-      producto_id: itemId,
-      cantidad,
-    });
-  };
-
-  const removeItemFromCart = async (itemId) => {
-    setCarrito((prevCarrito) => ({
-      ...prevCarrito,
-      items: prevCarrito.items.filter((item) => item.producto.id !== itemId),
-    }));
-    showToast("Item eliminado del carrito", "success");
-  };
+  
 
   const increment = async (itemId, cantidad) => {
     const item = carrito.items.find((it) => it.producto.id === itemId);
@@ -59,41 +44,56 @@ export const Carrito = () => {
       showToast("No hay suficiente producto disponible", "error");
       return;
     }
-    await updateItemQuantity(itemId, newQuantity);
-    setCarrito((prevCarrito) => ({
-      ...prevCarrito,
-      items: prevCarrito.items.map((it) =>
-        it.producto.id === itemId ? { ...it, cantidad: newQuantity } : it
-      ),
-    }));
+    try {
+      await updateItem(itemId, newQuantity);
+      setCarrito((prevCarrito) => ({
+        ...prevCarrito,
+        items: prevCarrito.items.map((it) =>
+          it.producto.id === itemId ? { ...it, cantidad: newQuantity } : it
+        ),
+      }));
+    } catch (err) {
+      console.error(err);
+      showToast("Error actualizando cantidad", "error");
+    }
   };
 
   const decrement = async (itemId, cantidad) => {
     const newQuantity = cantidad - 1;
     if (newQuantity < 0) return;
-    await updateItemQuantity(itemId, newQuantity);
-    if (newQuantity > 0) {
-      setCarrito((prevCarrito) => ({
-        ...prevCarrito,
-        items: prevCarrito.items.map((item) =>
-          item.producto.id === itemId
-            ? { ...item, cantidad: newQuantity }
-            : item
-        ),
-      }));
-    } else {
-      removeItemFromCart(itemId);
+    try {
+      if (newQuantity > 0) {
+        await updateItem(itemId, newQuantity);
+        setCarrito((prevCarrito) => ({
+          ...prevCarrito,
+          items: prevCarrito.items.map((item) =>
+            item.producto.id === itemId ? { ...item, cantidad: newQuantity } : item
+          ),
+        }));
+      } else {
+        await removeItem(itemId);
+        setCarrito((prevCarrito) => ({
+          ...prevCarrito,
+          items: prevCarrito.items.filter((item) => item.producto.id !== itemId),
+        }));
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Error actualizando cantidad", "error");
     }
   };
 
   const handleCheckout = () => {
+    if (!usuario) {
+      navigate("/register");
+      return;
+    }
     const form = document.createElement("form");
     form.method = "POST";
     form.action = import.meta.env.VITE_URL_PAYU;
 
     for (const key in formData) {
-      // eslint-disable-next-line no-prototype-builtins
-      if (formData.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(formData, key)) {
         const hiddenField = document.createElement("input");
         hiddenField.type = "hidden";
         hiddenField.name = key;
@@ -116,6 +116,11 @@ export const Carrito = () => {
 
   useEffect(() => {
     if (!items || !usuario) return;
+    // Debug: log items and image URLs
+    console.log("Carrito items:", items);
+    items.forEach((item) => {
+      console.log(`Item ${item.producto.id}: imagen = ${item.producto.imagen}`);
+    });
     setFormData((prevData) => ({
       ...prevData,
       description: items?.map((item) => item.producto.nombre).join(", "),
@@ -150,18 +155,28 @@ export const Carrito = () => {
             </div>
           ) : (
             <>
-              {items?.map(({ cantidad, producto }) => (
+              {items?.map(({ cantidad, producto }) => {
+                let imageUrl = "";
+                if (producto.imagen) {
+                  // If already a full URL (starts with http/https), use as-is
+                  if (producto.imagen.startsWith("http://") || producto.imagen.startsWith("https://")) {
+                    imageUrl = producto.imagen;
+                  }
+                  // If relative path starting with /, prepend backend URL
+                  else if (producto.imagen.startsWith("/")) {
+                    imageUrl = `${import.meta.env.VITE_BACK_URL_PROD}${producto.imagen}`;
+                  }
+                  // If just filename/path without /, prepend /media/ and backend URL
+                  else {
+                    imageUrl = `${import.meta.env.VITE_BACK_URL_PROD}/media/${producto.imagen}`;
+                  }
+                }
+                return (
                 <div
                   key={producto.id}
                   className="flex items-center justify-between mb-4 p-2 border-b"
                 >
-                  <img
-                    src={`${import.meta.env.VITE_BACK_URL_PROD}${
-                      producto.imagen
-                    }`}
-                    alt={producto.nombre}
-                    className="w-20 h-20 object-cover rounded"
-                  />
+                  <img src={imageUrl} alt={producto.nombre} className="w-20 h-20 object-cover rounded" onError={(e) => { e.target.src = import.meta.env.VITE_BACK_URL_PROD + "/media/images/placeholder.jpg"; }} />
                   <div className="flex-1 mx-4">
                     <h3 className="font-semibold">{producto.nombre}</h3>
                     <p className="text-gray-600">
@@ -180,7 +195,8 @@ export const Carrito = () => {
                     />
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <div className="flex justify-between font-bold mt-4">
                 <span>Total:</span>
                 <span>{formatearDinero(calcularTotal())}</span>

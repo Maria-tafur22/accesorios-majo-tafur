@@ -3,11 +3,14 @@ from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from .models import Producto
 from .serializers import ProductoSerializer
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def product_list(request):
     if 'pk' in request.GET:
         pk = request.GET['pk']
@@ -23,6 +26,7 @@ def product_list(request):
     return Response(serializer.data)
 
 @api_view(['GET', 'POST', 'PUT', 'DELETE'])
+@permission_classes([AllowAny])
 def product_detail(request, pk=None):
     if request.method == 'GET':
         try:
@@ -59,6 +63,7 @@ def product_detail(request, pk=None):
         return Response(status=status.HTTP_204_NO_CONTENT)
     
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def favorites(request):
     if request.method == 'GET':
         products = Producto.objects.filter(isFavorite=True)
@@ -66,6 +71,7 @@ def favorites(request):
         return Response(serializer.data)
     
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def getByCategory(request, pk=None):
     if request.method == 'GET':
         products = Producto.objects.filter(categoria_id=pk)
